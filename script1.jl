@@ -1,18 +1,9 @@
 using LinearAlgebra
 using Plots
 
-"""function diagonal(dim)
-    tmp = zeros(dim,dim)
-    for k in 1:dim
-        tmp[k,k] = 1
-    end
-    tmp
-end"""
-
-
-function power_metod(A::Matrix{Int64}, iteration=40)
+function power_metod(A::Matrix{Float64}, iteration=40)
     dimensions = size(A)[1]
-    eigen_vector = ones(dimensions,1)
+    eigen_vector = ones(dimeansions,1)
     eigen_value = norm(eigen_vector)
     for k in 1:iteration
         eigen_vector = A*eigen_vector/eigen_value
@@ -23,13 +14,6 @@ end
 
 function qr_q(A)
     dim = size(A)[1]
-    #U::typeof(A)(undef, dim, dim)
-    #proj::typeof(A)(undef, dim-1, dim)
-
-    """    if dim>1
-        A_next = A[:,2] - ()
-    end"""
-
     U = zeros(dim, dim)
     for col in 1:dim
         U[:,col] = A[:,col]
@@ -38,30 +22,54 @@ function qr_q(A)
         end
     end
     for col in 1:dim
-        rt_mean = sqrt(sum(U[:,col].^2))
-        U[:,col] /= rt_mean
+        U[:,col] /= sqrt(sum(U[:,col].^2))
     end
-
-
-    #
-    #A_next = rt_mean*A[:,1]
-    #A_next
     U
 end
 
 function eigen_qr(A, iteration=70)
-    dim = ndims(A)
+    dim = size(A)[1]
+    A_cpy = A
     for k in 1:iteration
         #QR = qr(A)
         #A = QR.Q'*A*QR.Q
+
         Q = qr_q(A)
+        #Q = qr_house(A)
         A = Q'*A*Q
+        #A = R*Q
+        #?A = Q*A*Q'
     end
-    eigen_var = Vector{Float64}(undef, dim)
+    eigenvalue = Vector{Float64}(undef, dim)
+    eigenvector = A_cpy
     for k in 1:dim
-        eigen_var[k] = A[k,k]
+        eigenvalue[k] = A[k,k]
+        eigenvector[:,k] = (A_cpy - Array{Float64,2}(I,dim,dim)*A[k,k])*ones(dim,1)
+        eigenvector[:,k] /= max(broadcast(abs, eigenvector[:,k])...)
     end
-    return eigen_var
+
+    return eigenvalue, eigenvector
+end
+
+function qr_house(A)
+    m,n = size(A)
+    #Q = Typeof(A)(I, m,n)
+    Q = Array{Float64,2}(I,m,n)
+    for k in 1:n
+        z = A[k:m, k]
+        v = [ -sign(z[1])*norm(z) - z[1]; -z[2:end] ]
+        v /= sqrt(v'*v)
+
+        for j in 1:n
+            A[k:m, j] = A[k:m, j] - v*( 2*(v'*A[k:m,j]) )
+        end
+        for j in 1:m
+            Q[k:m, j] = Q[k:m, j] - v*( 2*(v'*Q[k:m,j]) )
+        end
+    end
+    Q = Q'
+    R = triu(A)
+    return Q, R
 end
 
 struct Eigen_foo{T,V,S<:AbstractMatrix,U<:AbstractVector} <: Factorization{T}
@@ -69,14 +77,14 @@ struct Eigen_foo{T,V,S<:AbstractMatrix,U<:AbstractVector} <: Factorization{T}
     vectors::S
     Eigen_foo{T,V,S,U}(values::AbstractVector{V}, vectors::AbstractMatrix{T}) where {T,V,S,U} =
         new(values, vectors)
-end
+endq
 Eigen_foo(values::AbstractVector{V}, vectors::AbstractMatrix{T}) where {T,V} =
     Eigen_foo{T,V,typeof(vectors),typeof(values)}(values, vectors)
 
 # A = [3 1; 1 2]
 A = [0 1; 1 1]
-foo = [12 -51 4; 6 167 -68; -4 24 -41]
-qr_q(foo)
+foo = [12 -51 4; 6 167 -68; -4 24 -41] * 1.0
+#qr_q(foo)
 E = eigen(foo)
 E_power = power_metod(foo)
 E_qr = eigen_qr(foo)
