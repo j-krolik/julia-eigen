@@ -17,15 +17,17 @@ for i in 1:size(tested_functions)[1]
     pop!(tested_functions)
 end
 
-function bench!(tested_function_list)
+foo = [12 -51 4; 6 167 -68; -4 24 -41] * 1.0
+
+function bench(a=foo)
     global fun
-    for tested_fun in tested_function_list
+    for tested_fun in tested_functions
         fun = tested_fun.fun
-        b = @benchmarkable (fun($foo))
+        b = @benchmarkable (fun($a)) seconds=1.0
         tune!(b)
-        #tested_fun.result = 1
-        tested_fun.result = median(run(b))
+        tested_fun.result = (run(b))
     end
+    print_bench()
 end
 
 function print_bench()
