@@ -19,7 +19,7 @@ function power_metod(A::Matrix{T}, print_it=false, iteration=nothing, delta=5*10
      @inbounds for k in 1:iteration
         eigen_vector = A*eigen_vector./eigen_value
         eigen_value = norm(eigen_vector)
-        # chech if enought
+        # if enought delta enought small, break
         if abs(last_value-eigen_value)<delta print_it&&k!=1&&println(k); break end
         last_value=eigen_value
     end
@@ -31,7 +31,6 @@ function eigen_qr(A::Matrix, print_it=false)
     if (typeof(A)!=Matrix{Float64})
         A=convert(Matrix{Float64},A)
     end
-   #return E_qr=qr_q_eigen(A)
    return qr_q_eigen(A, print_it)
 end
 
@@ -46,7 +45,7 @@ function qr_q_eigen(A::Matrix{T}, print_iteration=false, delta=5*10^-6) where {T
     Q = Matrix{T}(undef,dim,dim)
     last_value::T = last(A)
     for k in 1:10000
-        # A-(QR)->Q
+        # QR factorization
         @inbounds for col in 1:dim
            Q[:,col] =(A[:,col])
            @inbounds for col_proj in 1:(col-1)
@@ -58,7 +57,7 @@ function qr_q_eigen(A::Matrix{T}, print_iteration=false, delta=5*10^-6) where {T
         end
         # calc eigen
         A = Q'*A*Q
-        # chech if enought
+        # if enought delta enought small, break
         if abs(last(A)-last_value)<delta print_iteration&&println(k); break end
         last_value=last(A)
 
@@ -104,6 +103,7 @@ function qr_householder_eigen!(A::Matrix{T}, print_iteration::Bool=false, delta=
     last_value::T = last(A)
     Q = Array{T,2}(I,dim,dim)
     for k in 1:100
+        # Householder factorization
         for k in 1:dim
             z = A[k:dim, k]
             v = [ -sign(z[1])*norm(z) - z[1]; -z[2:end] ]
@@ -111,7 +111,7 @@ function qr_householder_eigen!(A::Matrix{T}, print_iteration::Bool=false, delta=
             Q[k:dim,:] = Q[k:dim,:] - v*( 2*(v'*Q[k:dim,:]) )
         end
         A = Q*A*Q'
-        # if delta enought small, brek form loop
+        # if enought delta enought small, break
         if abs(last(A)-last_value)<delta print_iteration&&println(k); break end
         last_value=last(A)
         Q = Array{Float64,2}(I,dim,dim)
